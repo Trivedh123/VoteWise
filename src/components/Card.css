@@ -1,0 +1,19 @@
+.card {
+  background-color: var(--surface);
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--border);
+  border-bottom: 6px solid var(--border);
+  padding: 16px;
+  transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.card-clickable {
+  cursor: pointer;
+}
+
+.card-clickable:active {
+  border-bottom-width: 2px;
+  transform: translateY(4px);
+  margin-bottom: 4px;
+}

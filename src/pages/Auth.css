@@ -1,0 +1,12 @@
+.auth-page {
+  background-color: var(--surface);
+}
+
+.auth-input:focus {
+  border-bottom-width: 4px; /* Keep thickness on focus to prevent layout shift */
+}
+
+/* Specific styling to give text inputs that chunky look */
+input.auth-input {
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}

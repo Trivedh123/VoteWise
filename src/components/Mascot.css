@@ -1,0 +1,39 @@
+.mascot-container {
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.mascot-bubble {
+  border-bottom-width: 4px;
+}
+
+.mascot-bubble::before {
+  content: '';
+  position: absolute;
+  left: -10px;
+  bottom: 12px;
+  border-width: 10px 12px 10px 0;
+  border-style: solid;
+  border-color: transparent var(--border) transparent transparent;
+}
+
+.mascot-bubble::after {
+  content: '';
+  position: absolute;
+  left: -6px;
+  bottom: 12px;
+  border-width: 10px 12px 10px 0;
+  border-style: solid;
+  border-color: transparent var(--surface) transparent transparent;
+}
+
+.bounce-animation {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+  100% { transform: translateY(0px); }
+}

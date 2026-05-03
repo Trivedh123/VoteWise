@@ -1,0 +1,31 @@
+.learn-page {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.timeline-event::before {
+  content: '';
+  position: absolute;
+  left: -30px;
+  top: 24px;
+  bottom: -16px;
+  width: 2px;
+  background-color: var(--border);
+}
+
+.timeline-event:last-child::before {
+  display: none;
+}
+
+.module-book {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.module-book:active .book-cover {
+  border-bottom-width: 2px !important;
+  transform: translateY(4px);
+}
+
+.book-cover {
+  transition: all 0.1s;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
