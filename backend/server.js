@@ -3,11 +3,15 @@ const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('./db');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Serve static files from the 'dist' folder
+app.use(express.static(path.join(__dirname, 'dist')));
 
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_votewise_key_123';
@@ -126,6 +130,11 @@ app.post('/api/chat', authenticateToken, (req, res) => {
       reply: `That's a great question about "${message}". As an AI, I can tell you that checking your eligibility is the first vital step to participating in an election! 🎉`
     });
   }, 1000);
+});
+
+// Catch-all to serve the frontend for any other routes
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
 app.listen(PORT, () => {

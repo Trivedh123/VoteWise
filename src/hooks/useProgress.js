@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './useAuth';
 
-const API_URL = 'http://localhost:3000/api';
+const API_URL = window.location.origin.includes('localhost') ? 'http://localhost:3000/api' : '/api';
 
 export const useProgress = (storageKey, initialValue) => {
   const [progress, setProgress] = useState(initialValue);

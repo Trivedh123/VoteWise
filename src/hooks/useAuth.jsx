@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext(null);
-const API_URL = 'http://localhost:3000/api';
+const API_URL = window.location.origin.includes('localhost') ? 'http://localhost:3000/api' : '/api';
 
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(() => window.localStorage.getItem('votewise_token'));

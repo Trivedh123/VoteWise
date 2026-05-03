@@ -29,7 +29,8 @@ export const Chat = () => {
     setIsTyping(true);
 
     try {
-      const res = await fetch('http://localhost:3000/api/chat', {
+      const apiBase = window.location.origin.includes('localhost') ? 'http://localhost:3000/api' : '/api';
+      const res = await fetch(`${apiBase}/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
