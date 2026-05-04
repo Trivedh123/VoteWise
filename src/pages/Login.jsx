@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '../components/Button';
 import { useAuth } from '../hooks/useAuth';
+import { GoogleLogin } from '@react-oauth/google';
 import './Auth.css';
 
 export const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
 
   const [error, setError] = useState('');
@@ -57,6 +58,10 @@ export const Login = () => {
           />
         </div>
         
+        <div className="text-right">
+          <Link to="/forgot-password" virtual="true" className="text-muted font-bold text-sm hover:text-secondary">Forgot Password?</Link>
+        </div>
+        
         <Button type="submit" fullWidth className="py-4 text-xl mt-2 rounded-2xl">
           LOG IN
         </Button>
@@ -73,13 +78,19 @@ export const Login = () => {
           <div className="flex-grow border-t-2 border-border"></div>
         </div>
 
-        <button 
-          type="button" 
-          className="auth-social-btn w-full p-4 font-bold text-lg rounded-2xl border-2 border-border border-b-4 bg-surface flex items-center justify-center gap-3 transition-transform hover:bg-background active:border-b-2 active:translate-y-1"
-          onClick={() => { login(); navigate('/'); }}
-        >
-          <span className="text-xl">G</span> Continue with Google
-        </button>
+        <div className="flex justify-center">
+          <GoogleLogin
+            onSuccess={async (credentialResponse) => {
+              const res = await loginWithGoogle(credentialResponse.credential);
+              if (res.success) navigate('/');
+              else setError(res.error);
+            }}
+            onError={() => setError('Google Login Failed')}
+            useOneTap
+            theme="filled_blue"
+            shape="circle"
+          />
+        </div>
       </form>
     </div>
   );

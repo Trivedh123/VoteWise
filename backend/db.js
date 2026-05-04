@@ -20,7 +20,9 @@ db.serialize(() => {
       password_hash TEXT NOT NULL,
       streak INTEGER DEFAULT 0,
       gems INTEGER DEFAULT 0,
-      current_step INTEGER DEFAULT 0
+      current_step INTEGER DEFAULT 0,
+      reset_token TEXT,
+      reset_token_expiry DATETIME
     )
   `);
 });

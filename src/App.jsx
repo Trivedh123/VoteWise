@@ -8,6 +8,8 @@ import { Chat } from './pages/Chat';
 import { Profile } from './pages/Profile';
 import { Login } from './pages/Login';
 import { Signup } from './pages/Signup';
+import { ForgotPassword } from './pages/ForgotPassword';
+import { ResetPassword } from './pages/ResetPassword';
 import { useAuth } from './hooks/useAuth';
 import './App.css';
 
@@ -31,7 +33,7 @@ const PublicRoute = ({ children }) => {
 
 function App() {
   const location = useLocation();
-  const isAuthPage = location.pathname === '/login' || location.pathname === '/signup';
+  const isAuthPage = ['/login', '/signup', '/forgot-password', '/reset-password'].includes(location.pathname);
 
   return (
     <div className="app-container">
@@ -41,6 +43,8 @@ function App() {
         <Routes>
           <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
           <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
+          <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
+          <Route path="/reset-password" element={<PublicRoute><ResetPassword /></PublicRoute>} />
           
           <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
           <Route path="/learn" element={<ProtectedRoute><Learn /></ProtectedRoute>} />

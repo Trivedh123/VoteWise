@@ -4,6 +4,9 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('./db');
 const path = require('path');
+const crypto = require('crypto');
+const { OAuth2Client } = require('google-auth-library');
+const nodemailer = require('nodemailer');
 require('dotenv').config();
 
 const app = express();
@@ -14,7 +17,24 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'dist')));
 
 const PORT = process.env.PORT || 3000;
-const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_votewise_key_123';
+const JWT_SECRET = process.env.JWT_SECRET;
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+
+if (!JWT_SECRET) {
+  console.error('CRITICAL: JWT_SECRET is not defined in environment variables.');
+  process.exit(1);
+}
+
+const client = new OAuth2Client(GOOGLE_CLIENT_ID);
+
+// Email Transporter (Mock for now, update with real creds in .env)
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+});
 
 // Middleware to verify JWT token
 const authenticateToken = (req, res, next) => {
@@ -91,6 +111,116 @@ app.post('/api/auth/login', (req, res) => {
   });
 });
 
+app.post('/api/auth/google', async (req, res) => {
+  const { credential } = req.body;
+
+  try {
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    const { sub, email, name, picture } = payload;
+
+    // Check if user exists, else create
+    db.get('SELECT * FROM users WHERE email = ?', [email], (err, user) => {
+      if (err) return res.status(500).json({ error: 'Database error' });
+
+      if (user) {
+        const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
+        return res.json({ token, user });
+      } else {
+        // Create new user (random password since they use Google)
+        const dummyPassword = crypto.randomBytes(16).toString('hex');
+        const salt = bcrypt.genSaltSync(10);
+        const hash = bcrypt.hashSync(dummyPassword, salt);
+
+        db.run(
+          'INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)',
+          [name, email, hash],
+          function (err) {
+            if (err) return res.status(500).json({ error: 'Failed to create user' });
+            
+            const newUser = { id: this.lastID, name, email, streak: 0, gems: 0, current_step: 0 };
+            const token = jwt.sign({ id: this.lastID, email }, JWT_SECRET, { expiresIn: '7d' });
+            res.json({ token, user: newUser });
+          }
+        );
+      }
+    });
+  } catch (error) {
+    console.error('Google Auth Error:', error);
+    res.status(400).json({ error: 'Invalid Google token' });
+  }
+});
+
+// --- PASSWORD RESET ROUTES ---
+
+app.post('/api/auth/forgot-password', (req, res) => {
+  const { email } = req.body;
+
+  db.get('SELECT id FROM users WHERE email = ?', [email], (err, user) => {
+    if (err) return res.status(500).json({ error: 'Database error' });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiry = new Date(Date.now() + 3600000); // 1 hour
+
+    db.run(
+      'UPDATE users SET reset_token = ?, reset_token_expiry = ? WHERE id = ?',
+      [token, expiry.toISOString(), user.id],
+      async (err) => {
+        if (err) return res.status(500).json({ error: 'Failed to set reset token' });
+
+        // In a real app, send email. For demo, log it and return it.
+        const resetLink = `http://localhost:5173/reset-password?token=${token}`;
+        console.log(`Password reset link: ${resetLink}`);
+
+        if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+          try {
+            await transporter.sendMail({
+              from: '"VoteWise" <noreply@votewise.com>',
+              to: email,
+              subject: 'Password Reset Request',
+              text: `You requested a password reset. Click here: ${resetLink}`,
+              html: `<p>You requested a password reset. <a href="${resetLink}">Click here to reset your password</a></p>`
+            });
+          } catch (e) {
+            console.error('Email send failed:', e);
+          }
+        }
+
+        res.json({ message: 'Reset link generated. Check console or email.', link: resetLink });
+      }
+    );
+  });
+});
+
+app.post('/api/auth/reset-password', (req, res) => {
+  const { token, newPassword } = req.body;
+
+  db.get(
+    'SELECT id FROM users WHERE reset_token = ? AND reset_token_expiry > ?',
+    [token, new Date().toISOString()],
+    (err, user) => {
+      if (err) return res.status(500).json({ error: 'Database error' });
+      if (!user) return res.status(400).json({ error: 'Invalid or expired token' });
+
+      const salt = bcrypt.genSaltSync(10);
+      const hash = bcrypt.hashSync(newPassword, salt);
+
+      db.run(
+        'UPDATE users SET password_hash = ?, reset_token = NULL, reset_token_expiry = NULL WHERE id = ?',
+        [hash, user.id],
+        (err) => {
+          if (err) return res.status(500).json({ error: 'Failed to reset password' });
+          res.json({ message: 'Password reset successful' });
+        }
+      );
+    }
+  );
+});
+
 // --- USER PROGRESS ROUTES ---
 
 app.get('/api/user/progress', authenticateToken, (req, res) => {
@@ -133,7 +263,7 @@ app.post('/api/chat', authenticateToken, (req, res) => {
 });
 
 // Catch-all to serve the frontend for any other routes
-app.get('*', (req, res) => {
+app.get(/^(?!\/api).+/, (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
